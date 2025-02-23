@@ -10,11 +10,10 @@ export default function Header(sketch: string, showLinks?: boolean): string {
   return `
 	<header>
     <h1>${spaceWords(sketch)} Sketch</h1>
-    ${
-      showLinks
-        ? `<a class="link" href="https://p5js.org/" target="_blank">P5.js Docs</a>
-		       <a class="link" href="https://github.com/StillScripts/p5-starter" target="_blank">View on GitHub</a>`
-        : ""
+    ${showLinks
+      ? `<a class="link" href="https://p5js.org/" target="_blank">P5.js Docs</a>
+		       <a class="link" href="https://github.com/parsehex/p5-apps" target="_blank">View on GitHub</a>`
+      : ""
     }
   </header>`;
 }
