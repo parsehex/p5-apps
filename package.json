@@ -1,8 +1,8 @@
 {
-  "name": "p5-starter",
+  "name": "p5-apps",
   "author": {
-    "name": "Daniel Still",
-    "url": "https://github.com/StillScripts/p5-starter"
+    "name": "Thomas Mays",
+    "url": "https://github.com/parsehex"
   },
   "private": true,
   "version": "0.0.1",
