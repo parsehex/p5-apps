@@ -1,8 +1,8 @@
 import "./style.css";
 import { type SketchKey, sketchMap } from "./sketches/sketchMap";
-import { Header, SketchSelector, SketchContainer } from "./components";
-import { addListenerToSelect } from "./components/SketchSelector";
+import { Header, SketchContainer, SketchList } from "./components";
 import { renderSketch } from "./components/SketchContainer";
+import { addSketchListListeners } from "./components/SketchList";
 import { getSketchFromParams } from "./utils/urlParams";
 import { getKeys } from "./utils/common";
 
@@ -13,21 +13,20 @@ import { getKeys } from "./utils/common";
  */
 function init() {
   const CONTAINER_ID = "sketch-container";
-  const SELECT_ID = "animation-selector";
 
   const sketch: SketchKey = getSketchFromParams(getKeys(sketchMap)[0]); // get the sketch to render
   const app = document.querySelector<HTMLDivElement>("#app")!; // get the app container <div> element
 
-  // Update the innerHTML of the app container to contain the header, select input, and the sketch.
+  // Update the innerHTML to contain the header, sketch list, and sketch container.
   app.innerHTML = `
     ${Header(sketch, true)}
     <main>
-      ${SketchSelector(SELECT_ID, getKeys(sketchMap), sketch)}
+      ${SketchList(getKeys(sketchMap), sketch)}
       ${SketchContainer(CONTAINER_ID)}
     </main>
   `;
 
-  addListenerToSelect(SELECT_ID, sketch);
+  addSketchListListeners(); // Add event listeners for sketch selection
 
   renderSketch(CONTAINER_ID, sketch);
 }
