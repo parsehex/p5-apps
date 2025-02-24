@@ -23,7 +23,7 @@ export function redirectUrl(url: string, params?: ParamsType) {
         }
       }
 
-      window.location.assign(_url.href);
+      window.history.pushState(params || {}, '', _url.href);
     } catch (e) {
       throw new Error("The URL is not valid");
     }
