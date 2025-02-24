@@ -39,10 +39,11 @@ export function redirectUrl(url: string, params?: ParamsType) {
 export function convertToParam(key: SketchKey): string {
   let param = "";
   for (let i = 0; i < key.length; i++) {
-    if (key[i] === key[i].toUpperCase() && i > 0) {
+    const char = key[i];
+    if (char === char.toUpperCase() && i > 0 && char !== '-') {
       param += "-";
     }
-    param += key[i];
+    param += char;
   }
   return param.toLowerCase();
 }
