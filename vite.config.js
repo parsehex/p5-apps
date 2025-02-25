@@ -7,4 +7,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 1200,
   },
   plugins: [tailwindcss()],
+  test: {
+    environment: 'jsdom',
+  },
 });
