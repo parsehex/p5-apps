@@ -1,26 +1,32 @@
 import type p5 from "p5";
+import p5Obj from "p5";
 import { Unit } from "./unit";
-import { resolveCircleCollisions } from '../../../utils/collision';
+import { resolveCircleCollisions } from "../../../utils/collision";
 
 /**
  * The RTSGame class now holds two groups of player (blue) units as well as enemy units.
  * You can toggle (by pressing 1 or 2) which blue group is “active” so that only that subgroup
  * responds to a mouse click. When no group is selected (activeGroup === null), all blue units move.
+ *
+ * Enhancements added:
+ *  • Formation orders for active unit groups (on mouse click they now spread out rather than stack)
+ *  • Progressive enemy waves (when you clear the enemies, a new, tougher wave is auto-spawned)
  */
 export class RTSGame {
 	// Instead of a single array of player units, we use an array of groups.
 	playerUnitGroups: Unit[][];
 	enemyUnits: Unit[];
-	// When activeGroup is a valid index, only that subgroup will be given move commands.
+	// When activeGroup is a valid index, only that subgroup is given move commands.
 	// Setting it to null means that all player units receive orders.
 	activeGroup: number | null;
+	// Track the current enemy wave.
+	enemyWave: number;
 
 	constructor(p: p5) {
 		this.activeGroup = null;
 		this.playerUnitGroups = [];
 
 		// Create two groups of blue (player) units.
-		// (Here we still create 5 units, splitting them into group1 (first 3 units) and group2 (last 2 units).
 		const group1: Unit[] = [];
 		const group2: Unit[] = [];
 		const totalPlayerUnits = 5;
@@ -37,9 +43,20 @@ export class RTSGame {
 		}
 		this.playerUnitGroups.push(group1, group2);
 
-		// Initialize enemy (red) units in the upper part of the canvas.
+		// Initialize enemy units and set the starting wave.
+		this.enemyWave = 1;
 		this.enemyUnits = [];
-		for (let i = 0; i < 5; i++) {
+		this.spawnEnemyWave(p);
+	}
+
+	/**
+	 * Spawns a new enemy wave based on the current enemyWave count.
+	 * Enemies are spawned in the upper part of the canvas.
+	 */
+	spawnEnemyWave(p: p5) {
+		// For instance, wave 1 spawns 5 enemies, wave 2 spawns 6, etc.
+		const enemyCount = 4 + this.enemyWave;
+		for (let i = 0; i < enemyCount; i++) {
 			let x = p.width / 2 + p.random(-100, 100);
 			let y = 50 + p.random(0, 50);
 			this.enemyUnits.push(new Unit(p, x, y, "enemy"));
@@ -88,6 +105,12 @@ export class RTSGame {
 		);
 		// And from the enemy units.
 		this.enemyUnits = this.enemyUnits.filter((unit) => unit.health > 0);
+
+		// Spawn a new wave if all enemy units have been eliminated.
+		if (this.enemyUnits.length === 0) {
+			this.enemyWave++;
+			this.spawnEnemyWave(p);
+		}
 	}
 
 	/**
@@ -131,23 +154,24 @@ export class RTSGame {
 			10,
 			20
 		);
+		// Display current enemy wave info.
+		p.text("Wave: " + this.enemyWave, p.width - 80, 20);
 	}
 
 	/**
 	 * When the mouse is pressed, command player units to move toward the target point.
-	 * If a group is active, only that group receives the command.
+	 * If a group is active, only that group receives the command—and they receive formation orders!
 	 */
 	handleMousePressed(p: p5) {
 		const target = p.createVector(p.mouseX, p.mouseY);
 		if (this.activeGroup !== null) {
-			// Command only the active group.
-			this.playerUnitGroups[this.activeGroup].forEach((unit) =>
-				unit.setTarget(target)
-			);
+			// Instead of simply sending all units to the same target,
+			// issue a formation order for the active group.
+			this.issueFormationOrder(p, this.playerUnitGroups[this.activeGroup], target);
 		} else {
 			// Command all player units.
 			for (let group of this.playerUnitGroups) {
-				group.forEach((unit) => unit.setTarget(target));
+				this.issueFormationOrder(p, group, target);
 			}
 		}
 	}
@@ -163,6 +187,29 @@ export class RTSGame {
 		} else if (p.key === "2") {
 			// Toggle group 2.
 			this.activeGroup = this.activeGroup === 1 ? null : 1;
+		}
+	}
+
+	/**
+	 * Issues movement commands to units in a group so that they form a circle around the target point.
+	 * This helps prevent units from clumping together.
+	 */
+	private issueFormationOrder(p: p5, units: Unit[], target: p5.Vector) {
+		const unitCount = units.length;
+		if (unitCount === 0) return;
+		if (unitCount === 1) {
+			units[0].setTarget(target);
+			return;
+		}
+		// Determine the formation radius based on the number of units.
+		const formationRadius = Math.max(40, unitCount * 10);
+		const angleStep = p.TWO_PI / unitCount;
+		for (let i = 0; i < unitCount; i++) {
+			const angle = i * angleStep;
+			const offset = p.createVector(p.cos(angle), p.sin(angle)).mult(formationRadius);
+			// Add the offset to the clicked target to compute each unit’s new destination.
+			const unitTarget = p5Obj.Vector.add(target, offset);
+			units[i].setTarget(unitTarget);
 		}
 	}
 }
