@@ -380,7 +380,7 @@ export class MiniBattles {
 	}
 
 	private lineIntersectsLine(
-		p: p5,
+		_p: p5,
 		p1: p5.Vector,
 		p2: p5.Vector,
 		p3: p5.Vector,

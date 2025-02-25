@@ -32,7 +32,7 @@ export class Base {
 		this.walls = this.createWalls(p);
 	}
 
-	private createWalls(p: p5): WallSegment[] {
+	private createWalls(_p: p5): WallSegment[] {
 		const walls: WallSegment[] = [];
 		const cx = this.center.x;
 		const cy = this.center.y;

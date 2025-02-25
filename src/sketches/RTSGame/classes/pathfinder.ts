@@ -79,7 +79,7 @@ export class Pathfinder {
 	}
 
 	// Mark wall segments as obstacles on the grid
-	private markWallsOnGrid(p: p5) {
+	private markWallsOnGrid(_p: p5) {
 		// Create walls based on the base dimensions
 		const walls: WallSegment[] = [];
 		const cx = this.baseCenter.x;
