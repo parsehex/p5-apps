@@ -1,39 +1,31 @@
-import type p5 from "p5";
-import { RTSGame } from "./classes/game";
+import type p5 from 'p5';
+import { MiniBattles } from './classes/game';
 
 /**
- * This sketch implements a simple RTS game.
+ * MiniBattles is a simplified real-time strategy sketch.
  *
- * Blue player units are split into two groups. By pressing "1" or "2" you can toggle
- * which group is active: only that subgroup will respond to clicks. When no group is selected,
- * all blue units move.
- *
- * Controls:
- * - Click the canvas to send move commands.
- * - Press "1" or "2" to toggle between which blue group is selected.
+ * Blue player units are split into two groups.
+ * Press “1” or “2” to toggle which group is active.
+ * Click on the canvas to issue formation move orders.
  */
-export default function rtsGameSketch(p: p5) {
-	let game: RTSGame;
+export default function miniBattlesSketch(p: p5) {
+	let game: MiniBattles;
 
 	p.setup = () => {
-		// Create a 800x600 canvas.
 		p.createCanvas(800, 600);
 		p.frameRate(60);
-		game = new RTSGame(p);
+		game = new MiniBattles(p);
 	};
 
 	p.draw = () => {
-		// Update game state and draw all elements.
 		game.update(p);
 		game.display(p);
 	};
 
-	// Send move commands on mouse press.
 	p.mousePressed = () => {
 		game.handleMousePressed(p);
 	};
 
-	// Handle number key presses for group selection.
 	p.keyPressed = () => {
 		game.handleKeyPressed(p);
 	};
