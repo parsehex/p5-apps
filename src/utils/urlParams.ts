@@ -1,8 +1,8 @@
-import { type SketchKey, sketchMap } from "../sketches/sketchMap";
-import { getKeys } from "./common";
+import { type SketchKey, sketchMap } from '../sketches/sketchMap';
+import { getKeys } from './common';
 
 interface ParamsType {
-  [key: string]: string | number;
+	[key: string]: string | number;
 }
 
 /**
@@ -11,23 +11,23 @@ interface ParamsType {
  * @param {string} params - The new url parameters to use
  */
 export function redirectUrl(url: string, params?: ParamsType) {
-  if (typeof window !== "undefined") {
-    try {
-      const _url = new URL(url);
+	if (typeof window !== 'undefined') {
+		try {
+			const _url = new URL(url);
 
-      if (params) {
-        const keyList = Object.keys(params);
-        for (let i = 0; i < keyList.length; i += 1) {
-          const key = keyList[i];
-          _url.searchParams.set(keyList[i], params[key]?.toString());
-        }
-      }
+			if (params) {
+				const keyList = Object.keys(params);
+				for (let i = 0; i < keyList.length; i += 1) {
+					const key = keyList[i];
+					_url.searchParams.set(keyList[i], params[key]?.toString());
+				}
+			}
 
-      window.history.pushState(params || {}, '', _url.href);
-    } catch (e) {
-      throw new Error("The URL is not valid");
-    }
-  }
+			window.history.pushState(params || {}, '', _url.href);
+		} catch (e) {
+			throw new Error('The URL is not valid');
+		}
+	}
 }
 
 /**
@@ -37,15 +37,15 @@ export function redirectUrl(url: string, params?: ParamsType) {
  * @returns {string} - The url param that has been generated
  */
 export function convertToParam(key: SketchKey): string {
-  let param = "";
-  for (let i = 0; i < key.length; i++) {
-    const char = key[i];
-    if (char === char.toUpperCase() && i > 0 && char !== '-') {
-      param += "-";
-    }
-    param += char;
-  }
-  return param.toLowerCase();
+	let param = '';
+	for (let i = 0; i < key.length; i++) {
+		const char = key[i];
+		if (char === char.toUpperCase() && i > 0 && char !== '-') {
+			param += '-';
+		}
+		param += char;
+	}
+	return param.toLowerCase();
 }
 
 /**
@@ -55,18 +55,18 @@ export function convertToParam(key: SketchKey): string {
  * @returns {string} - The key for the sketchMap
  */
 export function convertFromParam(param: string): SketchKey {
-  const words = param.trim().split("-");
-  let key = "";
-  words.forEach((word) => {
-    for (let i = 0; i < word.length; i++) {
-      if (i === 0) {
-        key += word[i].toUpperCase();
-      } else {
-        key += word[i];
-      }
-    }
-  });
-  return key as SketchKey;
+	const words = param.trim().split('-');
+	let key = '';
+	words.forEach((word) => {
+		for (let i = 0; i < word.length; i++) {
+			if (i === 0) {
+				key += word[i].toUpperCase();
+			} else {
+				key += word[i];
+			}
+		}
+	});
+	return key as SketchKey;
 }
 
 /**
@@ -75,18 +75,18 @@ export function convertFromParam(param: string): SketchKey {
  * @returns {SketchKey} - The key of the sketch to use for the p5.js animation
  */
 export function getSketchFromParams(defaultSketch: SketchKey): SketchKey {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const sketchParam = params.get("sketch") as string;
-    const key = convertFromParam(sketchParam);
-    if (getKeys(sketchMap).includes(key)) {
-      return key;
-    } else {
-      return defaultSketch;
-    }
-  } catch (error) {
-    console.log("Url param error: " + error);
-    console.log("Showing the default Shapes animation due to the Url error");
-    return defaultSketch;
-  }
+	try {
+		const params = new URLSearchParams(window?.location.search);
+		const sketchParam = params.get('sketch') as string;
+		const key = convertFromParam(sketchParam);
+		if (getKeys(sketchMap).includes(key)) {
+			return key;
+		} else {
+			return defaultSketch;
+		}
+	} catch (error) {
+		console.log('Url param error: ' + error);
+		console.log('Showing the default Shapes animation due to the Url error');
+		return defaultSketch;
+	}
 }
