@@ -2,6 +2,7 @@ import type p5 from 'p5';
 import p5Obj from 'p5';
 import { Unit } from './unit';
 import { resolveCircleCollisions } from '../../../utils/collisions';
+import { Pathfinder } from './pathfinder';
 
 // --- Helper types for the base walls and lasers:
 interface Laser {
@@ -18,6 +19,8 @@ interface Rect {
 }
 
 export class RTSGame {
+	private pathfinder: Pathfinder;
+
 	// Unit groups
 	playerUnitGroups: Unit[][];
 	enemyUnits: Unit[];
@@ -53,6 +56,15 @@ export class RTSGame {
 		this.wallThickness = 10;
 		this.gateWidth = 40; // The gap in the bottom wall.
 		this.baseWalls = this.createBaseWalls();
+
+		this.pathfinder = new Pathfinder(
+			p,
+			this.baseCenter,
+			this.baseHalfWidth,
+			this.baseHalfHeight,
+			this.wallThickness,
+			this.gateWidth
+		);
 
 		// --- Spawn player units inside the base interior ---
 		const group1: Unit[] = [];
@@ -294,64 +306,28 @@ export class RTSGame {
 		p.textSize(12);
 		p.text(
 			'Press 1 or 2 to toggle unit group. Active Group: ' +
-			(this.activeGroup !== null ? this.activeGroup + 1 : 'All'),
+				(this.activeGroup !== null ? this.activeGroup + 1 : 'All'),
 			10,
 			20
 		);
 		p.text('Wave: ' + this.enemyWave, p.width - 80, 20);
 	}
 
-	// --------------------------
-	// NEW: Helper Pathfinding Methods
-	// --------------------------
-
-	/**
-	 * Checks if a given position is inside the base’s interior.
-	 */
-	private isInsideBase(pos: p5.Vector): boolean {
-		return (
-			pos.x > this.baseCenter.x - this.baseHalfWidth &&
-			pos.x < this.baseCenter.x + this.baseHalfWidth &&
-			pos.y > this.baseCenter.y - this.baseHalfHeight &&
-			pos.y < this.baseCenter.y + this.baseHalfHeight
-		);
-	}
-
-	/**
-	 * Returns the position of the base gate (an entry/exit point).
-	 * Here we pick a point just beyond the bottom wall.
-	 */
-	private getGatePosition(p: p5): p5.Vector {
-		// Gate center based on the bottom wall gap.
-		return p.createVector(
-			this.baseCenter.x,
-			this.baseCenter.y + this.baseHalfHeight + this.wallThickness + 5
-		);
-	}
-
-	/**
-	 * Returns the position of the base entrance (an entry point into the base).
-	 * For this example, we pick a point just inside the base’s bottom gate.
-	 */
-	private getEntryGate(p: p5): p5.Vector {
-		// Adjust the y coordinate to be just inside the base.
-		return p.createVector(
-			this.baseCenter.x,
-			this.baseCenter.y + this.baseHalfHeight - this.wallThickness - 5
-		);
-	}
-
 	/**
 	 * Issues an order for units to move in formation (a circle around the target).
 	 * If a unit is inside the base and its final order is outside,
-	 * we set a two–step path: first the gate then the final offset.
+	 * the path goes first through the gate then to the final target.
 	 */
 	private issueFormationOrder(p: p5, units: Unit[], target: p5.Vector) {
 		const unitCount = units.length;
 		if (unitCount === 0) return;
 		if (unitCount === 1) {
-			// For a single unit, calculate the full path.
-			const path = this.calculatePathForUnit(p, units[0], target);
+			// For a single unit, calculate the full path using the Pathfinder.
+			const path = this.pathfinder.calculatePathForUnit(
+				p,
+				units[0].position,
+				target
+			);
 			units[0].setPath(path);
 			return;
 		}
@@ -362,35 +338,15 @@ export class RTSGame {
 			const offset = p
 				.createVector(p.cos(angle), p.sin(angle))
 				.mult(formationRadius);
+			// Calculate each unit’s final position as an offset from the target.
 			const unitFinalTarget = p5Obj.Vector.add(target, offset);
-			const path = this.calculatePathForUnit(p, units[i], unitFinalTarget);
+			const path = this.pathfinder.calculatePathForUnit(
+				p,
+				units[i].position,
+				unitFinalTarget
+			);
 			units[i].setPath(path);
 		}
-	}
-
-	/**
-	 * Calculates a path for the unit to follow.
-	 * If the unit is inside the base and finalTarget is outside,
-	 * we send it through the exit gate.
-	 * Conversely, if the unit is outside and finalTarget is inside,
-	 * we send it through the entry gate.
-	 * Otherwise, the path is simply [finalTarget].
-	 */
-	private calculatePathForUnit(
-		p: p5,
-		unit: Unit,
-		finalTarget: p5.Vector
-	): p5.Vector[] {
-		// Unit is inside and final target is outside: head out.
-		if (this.isInsideBase(unit.position) && !this.isInsideBase(finalTarget)) {
-			return [this.getGatePosition(p), finalTarget.copy()];
-		}
-		// Unit is outside and final target is inside: head in.
-		if (!this.isInsideBase(unit.position) && this.isInsideBase(finalTarget)) {
-			return [this.getEntryGate(p), finalTarget.copy()];
-		}
-		// Otherwise, no need for an extra waypoint.
-		return [finalTarget.copy()];
 	}
 
 	/**
