@@ -58,7 +58,6 @@ export function convertFromParam(param: string): SketchKey {
   const words = param.trim().split("-");
   let key = "";
   words.forEach((word) => {
-    console.log(word);
     for (let i = 0; i < word.length; i++) {
       if (i === 0) {
         key += word[i].toUpperCase();
