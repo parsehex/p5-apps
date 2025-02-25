@@ -65,12 +65,7 @@ export default function pathfinderDemoSketch(p: p5) {
 		startPoint = p.createVector(p.width / 2, p.height / 2);
 		targetPoint = pathfinder.getGatePosition(p);
 		// Get initial path.
-		path = pathfinder.calculatePathForUnit(
-			p,
-			startPoint,
-			targetPoint,
-			base.walls
-		);
+		path = pathfinder.calculatePathForUnit(p, startPoint, targetPoint);
 	};
 
 	p.draw = () => {
@@ -90,12 +85,7 @@ export default function pathfinderDemoSketch(p: p5) {
 		p.pop();
 
 		// Recalculate path if start/target changed.
-		path = pathfinder.calculatePathForUnit(
-			p,
-			startPoint,
-			targetPoint,
-			base.walls
-		);
+		path = pathfinder.calculatePathForUnit(p, startPoint, targetPoint);
 
 		// Draw the calculated path.
 		if (path && path.length > 0) {
