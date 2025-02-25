@@ -16,8 +16,8 @@ export default function rtsGameSketch(p: p5) {
 	let game: RTSGame;
 
 	p.setup = () => {
-		// Create a 600x400 canvas.
-		p.createCanvas(600, 400);
+		// Create a 800x600 canvas.
+		p.createCanvas(800, 600);
 		p.frameRate(60);
 		game = new RTSGame(p);
 	};

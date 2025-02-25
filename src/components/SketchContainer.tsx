@@ -32,10 +32,7 @@ const SketchContainer: React.FC<SketchContainerProps> = ({ sketchKey }) => {
 
 	return (
 		<div className="flex justify-center">
-			<div
-				ref={containerRef}
-				className="w-[400px] h-[400px] border border-gray-300"
-			></div>
+			<div ref={containerRef} className="border border-gray-300"></div>
 		</div>
 	);
 };
