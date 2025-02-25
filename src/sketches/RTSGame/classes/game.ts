@@ -5,28 +5,26 @@ import { resolveCircleCollisions } from '../../../utils/collisions';
 import { Pathfinder } from './pathfinder';
 import { Base } from './Base';
 
-// Helper type for showing laser effects.
-interface Laser {
-	start: p5.Vector;
-	end: p5.Vector;
-	timer: number;
-}
-
 export class MiniBattles {
 	private pathfinder: Pathfinder;
-	private base: Base; // Now the base is managed by its own class
+	private base: Base;
 
 	// Unit groups
 	playerUnitGroups: Unit[][];
 	enemyUnits: Unit[];
 	activeGroup: number | null;
 	enemyWave: number;
-	lasers: Laser[];
+	lasers: { start: p5.Vector; end: p5.Vector; timer: number }[];
 
 	// Laser settings
 	private readonly laserRange = 150;
 	private readonly laserDamage = 10;
-	private readonly laserCooldownTime = 60; // frames
+	private readonly laserCooldownTime = 60;
+
+	// Respawn handling ---
+	private respawnDelay: number = 180; // frames (e.g. 3 seconds at 60 fps)
+	private respawnTimer: number | null = null;
+	private playerInitialCounts: number[]; // original counts for each player group
 
 	constructor(p: p5) {
 		this.activeGroup = null;
@@ -65,6 +63,10 @@ export class MiniBattles {
 			}
 		}
 		this.playerUnitGroups.push(group1, group2);
+		// Store the original counts for each group.
+		this.playerInitialCounts = this.playerUnitGroups.map(
+			(group) => group.length
+		);
 
 		// --- Initialize enemy units ---
 		this.enemyWave = 1;
@@ -72,7 +74,6 @@ export class MiniBattles {
 		this.spawnEnemyWave(p);
 	}
 
-	// Main update method reorganized into clear phases.
 	update(p: p5) {
 		this.updateUnitPositions(p);
 		this.resolveUnitCollisions(p);
@@ -81,6 +82,7 @@ export class MiniBattles {
 		this.checkBaseWallCollisions(p);
 		this.processMeleeAttacks(p);
 		this.removeDeadUnits();
+		this.updateRespawn(p);
 		this.spawnWaveIfNeeded(p);
 	}
 
@@ -185,7 +187,6 @@ export class MiniBattles {
 		}
 	}
 
-	// Enemy wave spawning remains similar.
 	spawnEnemyWave(p: p5) {
 		const enemyCount = 4 + this.enemyWave;
 		for (let i = 0; i < enemyCount; i++) {
@@ -195,7 +196,6 @@ export class MiniBattles {
 		}
 	}
 
-	// Rendering: draws the background, base walls, units, lasers, and UI text.
 	display(p: p5) {
 		p.background(34, 139, 34);
 
@@ -234,21 +234,53 @@ export class MiniBattles {
 				p.pop();
 			});
 		}
-
-		// UI text.
-		p.fill(255);
-		p.noStroke();
-		p.textSize(12);
-		p.text(
-			'Press 1 or 2 to toggle unit group. Active Group: ' +
-				(this.activeGroup !== null ? this.activeGroup + 1 : 'All'),
-			10,
-			20
-		);
-		p.text('Wave: ' + this.enemyWave, p.width - 80, 20);
 	}
 
-	// Orders units to move in formation (e.g., in a circular layout around a target).
+	private updateRespawn(p: p5) {
+		// Determine if any player group is missing units.
+		let needsRespawn = false;
+		for (let i = 0; i < this.playerUnitGroups.length; i++) {
+			if (this.playerUnitGroups[i].length < this.playerInitialCounts[i]) {
+				needsRespawn = true;
+				break;
+			}
+		}
+		if (needsRespawn) {
+			if (this.respawnTimer === null) {
+				this.respawnTimer = this.respawnDelay;
+			} else {
+				this.respawnTimer--;
+				if (this.respawnTimer <= 0) {
+					// For each player group, respawn any missing units inside the base.
+					for (let i = 0; i < this.playerUnitGroups.length; i++) {
+						const missing =
+							this.playerInitialCounts[i] - this.playerUnitGroups[i].length;
+						for (let j = 0; j < missing; j++) {
+							const spawnMargin = 20;
+							const minX =
+								this.base.center.x - this.base.halfWidth + spawnMargin;
+							const maxX =
+								this.base.center.x + this.base.halfWidth - spawnMargin;
+							const minY =
+								this.base.center.y - this.base.halfHeight + spawnMargin;
+							const maxY =
+								this.base.center.y + this.base.halfHeight - spawnMargin;
+							const x = p.random(minX, maxX);
+							const y = p.random(minY, maxY);
+							const unit = new Unit(p, x, y, 'player');
+							this.playerUnitGroups[i].push(unit);
+							break;
+						}
+					}
+					this.respawnTimer = null;
+				}
+			}
+		} else {
+			this.respawnTimer = null;
+		}
+	}
+
+	// Orders units to move in formation.
 	private issueFormationOrder(p: p5, units: Unit[], target: p5.Vector) {
 		const unitCount = units.length;
 		if (unitCount === 0) return;
@@ -278,7 +310,7 @@ export class MiniBattles {
 		}
 	}
 
-	// On mouse press, issues move orders.
+	// On mouse press, issue move orders.
 	handleMousePressed(p: p5) {
 		const target = p.createVector(p.mouseX, p.mouseY);
 		if (this.activeGroup !== null) {
@@ -294,12 +326,27 @@ export class MiniBattles {
 		}
 	}
 
-	// Handle key presses to toggle unit groups.
+	// Handle key presses for toggling groups and dev testing.
 	handleKeyPressed(p: p5) {
 		if (p.key === '1') {
 			this.activeGroup = this.activeGroup === 0 ? null : 0;
 		} else if (p.key === '2') {
 			this.activeGroup = this.activeGroup === 1 ? null : 1;
+		}
+		// Press D (or d) to kill player unit for testing
+		else if (p.key.toLowerCase() === 'd') {
+			if (this.activeGroup !== null) {
+				this.playerUnitGroups[this.activeGroup][0].health = 0;
+			} else {
+				let killed = false;
+				this.playerUnitGroups.forEach((group) =>
+					group.forEach((unit) => {
+						if (!unit || !unit.health || killed) return;
+						unit.health = 0;
+						killed = true;
+					})
+				);
+			}
 		}
 	}
 
