@@ -1,5 +1,6 @@
 import type p5 from "p5";
 import { Unit } from "./unit";
+import { resolveCircleCollisions } from '../../../utils/collision';
 
 /**
  * The RTSGame class now holds two groups of player (blue) units as well as enemy units.
@@ -49,14 +50,20 @@ export class RTSGame {
 	 * Update all units and check for combat collisions.
 	 */
 	update(p: p5) {
-		// Update each player unit in each group.
-		for (let group of this.playerUnitGroups) {
+		// 1. Update each player unit in each group.
+		this.playerUnitGroups.forEach((group) => {
 			group.forEach((unit) => unit.update(p));
-		}
-		// Update enemy units.
+		});
+
+		// 2. Update enemy units.
 		this.enemyUnits.forEach((unit) => unit.update(p));
 
-		// Check for combat between all player units and enemy units.
+		// 3. Resolve collisions between all units so they stop overlapping.
+		// Combine the player (all groups) and enemy units.
+		const allUnits = this.playerUnitGroups.flat().concat(this.enemyUnits);
+		resolveCircleCollisions(p, allUnits);
+
+		// 4. Check for combat collisions (if within attack range).
 		const attackRange = 20;
 		const damage = 0.5;
 		const allPlayerUnits = this.playerUnitGroups.flat();
@@ -75,11 +82,11 @@ export class RTSGame {
 			}
 		}
 
-		// Remove any dead units from each player group.
+		// Remove any dead units from the player groups.
 		this.playerUnitGroups = this.playerUnitGroups.map((group) =>
 			group.filter((unit) => unit.health > 0)
 		);
-		// Remove dead enemy units.
+		// And from the enemy units.
 		this.enemyUnits = this.enemyUnits.filter((unit) => unit.health > 0);
 	}
 

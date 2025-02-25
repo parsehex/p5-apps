@@ -120,3 +120,48 @@ export function lineIntersectsCircle(
 
 	return t1 >= 0 && t1 <= 1 || t2 >= 0 && t2 <= 1;
 }
+
+/**
+ * Resolves overlapping between circular objects by pushing them apart.
+ * Each object is displaced by half the overlap amount along the line connecting them.
+ *
+ * @param p - The p5 instance.
+ * @param objects - An array of objects with a position (p5.Vector) and a radius.
+ */
+export function resolveCircleCollisions(
+	p: p5,
+	objects: { position: p5.Vector; radius: number }[]
+): void {
+	for (let i = 0; i < objects.length; i++) {
+		for (let j = i + 1; j < objects.length; j++) {
+			if (
+				circlesCollide(
+					objects[i].position,
+					objects[i].radius,
+					objects[j].position,
+					objects[j].radius
+				)
+			) {
+				let d = objects[i].position.dist(objects[j].position);
+				if (d === 0) {
+					// Avoid division by zero by nudging one object randomly.
+					objects[i].position.x += p.random(-1, 1);
+					objects[i].position.y += p.random(-1, 1);
+					d = objects[i].position.dist(objects[j].position);
+				}
+				// Determine how far they overlap.
+				const overlap = objects[i].radius + objects[j].radius - d;
+				// Calculate the normalized vector from object[j] to object[i].
+				const displacement = p5Obj.Vector.sub(
+					objects[i].position,
+					objects[j].position
+				)
+					.normalize()
+					.mult(overlap / 2);
+				// Push each object away by half the overlap.
+				objects[i].position.add(displacement);
+				objects[j].position.sub(displacement);
+			}
+		}
+	}
+}
